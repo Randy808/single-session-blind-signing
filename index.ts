@@ -7,24 +7,24 @@ let { Point } = secp256k1;
 const Fn = secp256k1.Point.Fn;
 const G = secp256k1.Point.BASE;
 
-// Generate keypair
+// Signer generates keypair
 const alice = secp256k1.keygen();
 const alicePublicKey = Point.fromBytes(alice.publicKey);
 
-// Generate nonce
+// Signer generates nonce
 const nonce = secp256k1.keygen();
 let R = nonce.publicKey;
 
-// Let the user tweak it
+// User tweaks committed nonce 'R' into 'R_prime'
 const alpha = secp256k1.keygen().secretKey;
 const beta = secp256k1.keygen().secretKey;
 
 const betaPublicKey = alicePublicKey.multiply(Fn.fromBytes(beta));
 let aGbP = G.multiply(Fn.fromBytes(alpha)).add(betaPublicKey);
 
-let R_prime = Point.fromBytes(nonce.publicKey).add(aGbP);
+let R_prime = Point.fromBytes(R).add(aGbP);
 
-// Generate new challenge
+// User generates challenge 'e' (that's NOT sent to signer)
 let message = "hello world";
 const encoder = new TextEncoder();
 const messageBytes = encoder.encode(message);
@@ -33,16 +33,21 @@ let e = Fn.fromBytes(
   sha256(concatBytes(R_prime.toBytes(), alice.publicKey, messageBytes)),
 );
 
+// User blinds challenge 'e' to get 'e_prime'
 let e_prime = Fn.create(e + Fn.fromBytes(beta));
 
-// Give R_prime and e_prime to signer to finish blind signature
+// User gives signer 'R_prime' and 'e_prime' to finish blind signature
+// Signer generates blinded signature 's_prime'
 let s_prime = Fn.create(
   Fn.fromBytes(nonce.secretKey) + e_prime * Fn.fromBytes(alice.secretKey),
 );
 
-// Give to user to unblind signature
+// Signer gives the blinded signature 's_prime' to user
+// User unblinds into 's'
 let s = Fn.create(s_prime + Fn.fromBytes(alpha));
 
+// Verifier verifies that the unblinded signature 's' is valid for message
+// with the original challenge 'e' and the user-tweaked nonce 'R_prime'
 let signatureDerivedVerificationValue = G.multiply(Fn.create(s));
 
 let verificationValue = R_prime.add(
