@@ -1,0 +1,14 @@
+{
+  "name": "single-session-blind-signing",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@noble/curves": "^1.9.7"
+  }
+}
